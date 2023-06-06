@@ -1,0 +1,100 @@
+version: "3.9"
+
+name: ${PROJECT_NAME}
+
+services:
+  mariadb:
+    image: wodby/mariadb:$MARIADB_TAG
+    container_name: "${PROJECT_NAME}_mariadb"
+    stop_grace_period: 30s
+    environment:
+      MYSQL_ROOT_PASSWORD: $DB_ROOT_PASSWORD
+      MYSQL_DATABASE: $DB_NAME
+      MYSQL_USER: $DB_USER
+      MYSQL_PASSWORD: $DB_PASSWORD
+    volumes:
+      - database:/var/lib/mysql
+
+  php:
+    pull_policy: never
+    image: wodby/php:$PHP_TAG
+    container_name: "${PROJECT_NAME}_php"
+    environment:
+      PHP_SENDMAIL_PATH: /usr/sbin/sendmail -t -i -S mailhog:1025
+      DB_HOST: $DB_HOST
+      DB_DATABASE: $DB_NAME
+      DB_USERNAME: $DB_USER
+      DB_PASSWORD: $DB_PASSWORD
+      PHP_FPM_USER: wodby
+      PHP_FPM_GROUP: wodby
+      DB_CONNECTION: $DB_DRIVER
+      APP_URL: "http://${PROJECT_BASE_URL}"
+
+## Read instructions at https://wodby.com/docs/stacks/php/local/#xdebug
+#      PHP_XDEBUG: ${PHP_XDEBUG}
+#      PHP_XDEBUG_MODE: debug
+#      PHP_XDEBUG_LOG_LEVEL: 5
+#      PHP_IDE_CONFIG: serverName=
+#      PHP_XDEBUG_IDEKEY: "PHPSTORM"
+#      PHP_XDEBUG_CLIENT_HOST: 172.17.0.1 # Linux
+##      PHP_XDEBUG_CLIENT_HOST: host.docker.internal # Docker 18.03+ Mac/Win
+##      PHP_XDEBUG_CLIENT_HOST: 10.0.75.1 # Windows
+    volumes:
+      - ../src:/var/www/html:cached
+
+  nginx:
+    image: wodby/nginx:$NGINX_TAG
+    container_name: "${PROJECT_NAME}_nginx"
+    depends_on:
+      - php
+    environment:
+      NGINX_STATIC_OPEN_FILE_CACHE: "off"
+      NGINX_ERROR_LOG_LEVEL: debug
+      NGINX_BACKEND_HOST: php
+      NGINX_VHOST_PRESET: php
+      NGINX_SERVER_ROOT: /var/www/html/public
+    volumes:
+      - ../src:/var/www/html:cached
+    labels:
+      # HTTP
+      - "traefik.http.routers.${PROJECT_NAME}_nginx.entrypoints=web"
+      - "traefik.http.routers.${PROJECT_NAME}_nginx.rule=Host(`${PROJECT_BASE_URL}`)"
+
+  pma:
+    image: phpmyadmin/phpmyadmin
+    container_name: "${PROJECT_NAME}_pma"
+    environment:
+      PMA_HOST: $DB_HOST
+      PMA_USER_CONFIG_BASE64: PD9waHAKCiRjZmdbJ01heE5hdmlnYXRpb25JdGVtcyddID0gNTAwMDsKJGNmZ1snTmF2aWdhdGlvblRyZWVFbmFibGVHcm91cGluZyddID0gRkFMU0U7CiRjZmdbJ0xvZ2luQ29va2llVmFsaWRpdHknXSA9IDYwNDgwMDsK
+      PHP_UPLOAD_MAX_FILESIZE: 1G
+      PHP_MAX_INPUT_VARS: 1G
+    labels:
+      # HTTP
+      - "traefik.http.routers.${PROJECT_NAME}_pma.entrypoints=web"
+      - "traefik.http.routers.${PROJECT_NAME}_pma.rule=Host(`pma.${PROJECT_BASE_URL}`)"
+
+
+  traefik:
+    container_name: "${PROJECT_NAME}_traefik"
+    image: traefik:v2.9
+    command:
+      - --api.dashboard=true
+      - --providers.docker
+      - --entrypoints.web.address=:80
+    ports:
+      - '8080:80'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    labels:
+      # HTTP
+      - "traefik.http.routers.${PROJECT_NAME}_dashboard-http.entrypoints=web"
+      - "traefik.http.routers.${PROJECT_NAME}_dashboard-http.rule=Host(`dashboard.${PROJECT_BASE_URL}`)"
+      - "traefik.http.routers.${PROJECT_NAME}_dashboard-http.service=api@internal"
+
+volumes:
+  database:
+    name: ${PROJECT_NAME}_database
+
+networks:
+  default:
+    name: ${PROJECT_NAME}_default
