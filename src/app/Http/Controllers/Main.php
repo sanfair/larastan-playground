@@ -2,11 +2,23 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\CSVOrderImportProcess;
+use Illuminate\Database\Eloquent\Collection;
 
 class Main extends Controller
 {
-    public function __invoke(Request $request): void
+    private CSVOrderImportProcess $model;
+
+    public function __construct()
     {
+        $this->model = new CSVOrderImportProcess();
+    }
+
+    /** @return \Illuminate\Database\Eloquent\Collection<int, \App\Models\CSVOrderImportProcess> */
+    public function __invoke(): Collection
+    {
+        return $this->model->setConnection('mysql')->newQuery()
+            ->whereNot('id', 0)
+            ->get();
     }
 }
