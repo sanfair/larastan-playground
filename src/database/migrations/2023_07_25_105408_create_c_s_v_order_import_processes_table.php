@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::setConnection(DB::connection('mysql'))
-            ->create('c_s_v_order_import_process_repositories', function (Blueprint $table) {
+            ->create('c_s_v_order_import_processes', function (Blueprint $table) {
                 $table->id();
                 $table->timestamps();
             });
@@ -23,6 +23,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('c_s_v_order_import_process_repositories');
+        Schema::dropIfExists('c_s_v_order_import_processes');
     }
 };
