@@ -13,6 +13,7 @@ class Invitation extends Model
 {
     use HasFactory;
 
+    /** @return \Illuminate\Database\Eloquent\Relations\BelongsTo<\App\Models\User, \App\Models\Invitation> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

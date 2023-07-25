@@ -46,6 +46,7 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
+    /** @return \Illuminate\Database\Eloquent\Relations\HasMany<\App\Models\Invitation> */
     public function invitations(): HasMany
     {
         return $this->hasMany(Invitation::class);
