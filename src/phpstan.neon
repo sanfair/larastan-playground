@@ -3,7 +3,6 @@ includes:
     - phpstan-baseline.php
 
 parameters:
-
     paths:
         - app/
         - bootstrap/
@@ -12,7 +11,7 @@ parameters:
         - routes/
 
     # Level 9 is the highest level
-    level: 5
+    level: 8
 
 #    ignoreErrors:
 #        - '#PHPDoc tag @mixin contains unknown class App\\Models\\IdeHelper[\w]+#'
